@@ -95,32 +95,32 @@ d=d[31:60]
 d=d[1:]
 d=d.fillna(d.median())
 
-# ax = sns.clustermap(d.corr(), annot=True)
-# plt.title("China indicators correlation")
-# plt.savefig("clustermap.png",dpi=720)
-# plt.show()
+ax = sns.clustermap(d.corr(), annot=True)
+plt.title("China indicators correlation")
+plt.savefig("clustermap.png",dpi=720)
+plt.show()
 
-# pd.plotting.scatter_matrix(d, figsize=(9.0,9.0))
-# plt.tight_layout()
-# plt.savefig("scatter_matrix.png",dpi=720)
-# plt.show()
+pd.plotting.scatter_matrix(d, figsize=(9.0,9.0))
+plt.tight_layout()
+plt.savefig("scatter_matrix.png",dpi=720)
+plt.show()
 
-# d_fit = d[['co2 emissions', 'Energy use']].copy()
-# d_fit = norm_df(d_fit)
-
-        
-# Clusters_data(d_fit)
-# scatter_plot(d_fit, 3, 'co2 emissions', 'Energy use')  
-# scatter_plot(d_fit, 4, 'co2 emissions', 'Energy use')       
-
-
-# d_fitting = d[['Agriculture,forestry and fishing', 'Forest area']].copy()
-# d_fitting = norm_df(d_fitting)
+d_fit = d[['co2 emissions', 'Energy use']].copy()
+d_fit = norm_df(d_fit)
 
         
-# Clusters_data(d_fitting)
-# scatter_plot(d_fitting, 3, 'Agriculture,forestry and fishing', 'Forest area')  
-# scatter_plot(d_fitting, 4, 'Agriculture,forestry and fishing', 'Forest area')       
+Clusters_data(d_fit)
+scatter_plot(d_fit, 3, 'co2 emissions', 'Energy use')  
+scatter_plot(d_fit, 4, 'co2 emissions', 'Energy use')       
+
+
+d_fitting = d[['Agriculture,forestry and fishing', 'Forest area']].copy()
+d_fitting = norm_df(d_fitting)
+
+        
+Clusters_data(d_fitting)
+scatter_plot(d_fitting, 3, 'Agriculture,forestry and fishing', 'Forest area')  
+scatter_plot(d_fitting, 4, 'Agriculture,forestry and fishing', 'Forest area')       
 
 d = d.reset_index()
 d = d.rename(columns = {'index':'years'})
