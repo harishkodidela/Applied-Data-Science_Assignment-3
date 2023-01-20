@@ -11,7 +11,7 @@ import seaborn as sns
 import sklearn.metrics as skmet
 import sklearn.cluster as cluster
 import numpy as np
-
+import scipy.optimize as opt
 #working with datasets
 def handling_data(path):
     ''' generating two dataset with country and year as columns
@@ -73,9 +73,7 @@ def scatter_plot(df, n, col1, col2):
         plt.xlabel(col1)
         plt.ylabel(col2)
         plt.title(f'{n} clusters for {col1} vs {col2}')
-    plt.show()
-    plt.savefig("Cluster_Plot", dpi=720)
-    
+    plt.show()    
 
 country,year=handling_data('Data World Bank_Climate change data.csv')
 columns=year.iloc[0].unique()
@@ -97,30 +95,137 @@ d=d[31:60]
 d=d[1:]
 d=d.fillna(d.median())
 
-ax = sns.clustermap(d.corr(), annot=True)
-plt.title("China indicators correlation")
-plt.savefig("clustermap.png",dpi=720)
-plt.show()
+# ax = sns.clustermap(d.corr(), annot=True)
+# plt.title("China indicators correlation")
+# plt.savefig("clustermap.png",dpi=720)
+# plt.show()
 
-pd.plotting.scatter_matrix(d, figsize=(9.0,9.0))
-plt.tight_layout()
-plt.savefig("scatter_matrix.png",dpi=720)
-plt.show()
+# pd.plotting.scatter_matrix(d, figsize=(9.0,9.0))
+# plt.tight_layout()
+# plt.savefig("scatter_matrix.png",dpi=720)
+# plt.show()
 
-d_fit = d[['co2 emissions', 'Energy use']].copy()
-d_fit = norm_df(d_fit)
-
-        
-Clusters_data(d_fit)
-scatter_plot(d_fit, 3, 'co2 emissions', 'Energy use')  
-scatter_plot(d_fit, 4, 'co2 emissions', 'Energy use')       
-
-
-d_fitting = d[['Agriculture,forestry and fishing', 'Forest area']].copy()
-d_fitting = norm_df(d_fitting)
+# d_fit = d[['co2 emissions', 'Energy use']].copy()
+# d_fit = norm_df(d_fit)
 
         
-Clusters_data(d_fitting)
-scatter_plot(d_fitting, 3, 'Agriculture,forestry and fishing', 'Forest area')  
-scatter_plot(d_fitting, 4, 'Agriculture,forestry and fishing', 'Forest area')       
+# Clusters_data(d_fit)
+# scatter_plot(d_fit, 3, 'co2 emissions', 'Energy use')  
+# scatter_plot(d_fit, 4, 'co2 emissions', 'Energy use')       
+
+
+# d_fitting = d[['Agriculture,forestry and fishing', 'Forest area']].copy()
+# d_fitting = norm_df(d_fitting)
+
+        
+# Clusters_data(d_fitting)
+# scatter_plot(d_fitting, 3, 'Agriculture,forestry and fishing', 'Forest area')  
+# scatter_plot(d_fitting, 4, 'Agriculture,forestry and fishing', 'Forest area')       
+
+d = d.reset_index()
+d = d.rename(columns = {'index':'years'})
+d['years'] = d['years'].astype(int)
+print(d.columns)
+
+
+def exp_growth(t, scale, growth):
+    """ Computes exponential function with scale and growth as free parameters
+    """
+    f = scale * np.exp(growth * (t-1950))
+    return f
+def logistics(t, scale, growth, t0):
+    """ Computes logistics function with scale, growth raat
+    and time of the turning point as free parameters
+    """
+    f = scale / (1.0 + np.exp(-growth * (t - t0)))
+    return f
+
+def exp_fit(popt):
+    d["pop_exp"] = exp_growth(d["years"], *popt)
+
+def fit_plot(d,title):
+    plt.figure()
+    plt.plot(d["years"], d["Urban Population"], label="original data")
+    plt.plot(d["years"], d["pop_exp"], label="Fitted data")
+    plt.legend()
+    plt.title(title)
+    plt.savefig(title,dpi = 720)
+    plt.xlabel("years")
+    plt.ylabel("Urban Population")
+    plt.show()    
+
+def log_fit(popt):
+    d["pop_exp"] = logistics(d["years"], *popt)
+    
+
+p, covar = opt.curve_fit(exp_growth,d["years"],d["Urban Population"])
+
+exp_fit(p)
+fit_plot(d, title='First Fit')
+print(p)
+
+p = [1e6, 0.01]
+exp_fit(p)
+fit_plot(d, title='second Fit')
+
+p, covar = opt.curve_fit(exp_growth,d["years"],d["Urban Population"], p0 = [1e6,0.02])
+
+exp_fit(p)
+fit_plot(d, title='final Fit EXP')
+
+p = [2e6, 0.02, 1970]
+log_fit(p)
+fit_plot(d, 'logistic Function')
+
+p, covar = opt.curve_fit(logistics,d["years"],d["Urban Population"], p0 = [1e6,0.07, 1970])
+
+log_fit(p)
+fit_plot(d, title = 'Logistic funtction')
+
+sigma = np.sqrt(np.diag(covar))
+
+def err_ranges(x, func, param, sigma):
+    """ calculate the error ranges"""
+   
+
+    import itertools as iter
+    
+    # initiate arrays for lower and upper limits
+    lower = func(x, *param)
+    upper = lower
+    
+    uplow = []   # list to hold upper and lower limits for parameters
+    for p,s in zip(param, sigma):
+        pmin = p - s
+        pmax = p + s
+        uplow.append((pmin, pmax))
+        
+    pmix = list(iter.product(*uplow))
+    
+    for p in pmix:
+        y = func(x, *p)
+        lower = np.minimum(lower, y)
+        upper = np.maximum(upper, y)
+        
+    return lower, upper 
+
+year = np.arange(1980, 2031)
+print(year)
+forecast = logistics(year, *p)
+
+
+low, up = err_ranges (year, logistics, p, sigma)
+
+plt.figure()
+plt.plot(d["years"], d["Urban Population"], label="Urban Population")
+plt.plot(year, forecast, label="forecast")
+
+plt.fill_between(year, low, up, color="yellow", alpha=0.7)
+plt.ylabel("Urban Population")
+plt.xlabel("Year")
+plt.title('Urban Population err_range forecast')
+plt.legend()
+
+plt.savefig('Urban Population')
+
 
